@@ -1,8 +1,11 @@
+# -*- coding: utf-8 -*- 
 ################################################
 ### GIS Application Project : 3D Convex Hull ###
 ################################################
 
 #https://github.com/diwi/QuickHull-3D/blob/master/src/MAIN_quickhull/DwConvexHull3D.java
+
+# add findEdge(edgeList):
 
 import arcpy
 import numpy as np
@@ -23,11 +26,11 @@ class Point(object):
     self.z = z
     self.flag = False
     
-class Line(object):
+class Edge(object):
   def __init__(self, p1, p2):
     self.p1 = p1
     self.p2 = p2
-    self.flag = False
+    # self.flag = False
 
 class Face(object):
   def __init__(self, p1, p2, p3):
@@ -40,11 +43,14 @@ class Face(object):
     self.c = ( (p2.x-p1.x)*(p3.y-p1.y)-(p2.y-p1.y)*(p3.x-p1.x) )
     self.d = ( 0-(self.a*p1.x+self.b*p1.y+self.c*p1.z))
     ### is inside hull
+    if self.a < 0:
+      self.a = -self.a
+      self.b = -self.b
+      self.c = -self.c
+      self.d = -self.d
     self.flag = False;
 
-    
-    
-    
+
     
 # read all the points info into memory
 def readPoints(inFC):
@@ -183,6 +189,7 @@ def furthestPnt2Pnt(mmPoints):
     index2 = 1
   return index1, index2  
 
+
 ### Find a distant point to the line
 # inFC : mmPoints
 def furthestPnt2Line (inFC,index1,index2):
@@ -222,12 +229,30 @@ def furthestPnt2Face(pntSet,face):
 # construct a face with right-handed rule
 # input is 4 points, output is a face build up with first three points
 # rPnt is a point inside the init hull, so the volume with any face would be negative
+##########################################
 def faceFactory(faceP1, faceP2, faceP3, innerPnt):
   face = Point(faceP1, faceP2, faceP3)
   if not checkVisibility(face, innerPnt):
     return face
   else:
     return Point(faceP1, faceP3, faceP2)
+
+### if there's more than one light face, a outer ring is needed to be find
+### then using the points on this ring to constract new faces
+def findEdge(edgeList):
+    temp = []
+    index = []
+    for i in range(len(edgeList)):
+      for j in range(i+1, len(edgeList)):
+        if edgeList[i].__dict__ == edgeList[j].__dict__:
+          index.append(i)
+    
+    for i in range(len(edgeList)):
+      if i not in index:
+        temp.append(edgeList[i])
+
+    return temp
+
 
 ### Check if the point can see the faces 
 def checkVisibility(face, p):
