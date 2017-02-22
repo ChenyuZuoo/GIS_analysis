@@ -6,6 +6,7 @@
 #https://github.com/diwi/QuickHull-3D/blob/master/src/MAIN_quickhull/DwConvexHull3D.java
 
 # add findEdge(edgeList):
+# add getMiddlePnt(pnt1, pnt2):
 
 import arcpy
 import numpy as np
@@ -221,15 +222,19 @@ def furthestPnt2Face(pntSet,face):
     #if (dist == 0) :
       #print("All the points from the point clouds are Coplaner.")
       #break  
-  return pntSet[index_dist]    
+  return pntSet[index_dist]
       
-
+def getMiddlePnt(pnt1, pnt2):
+  x = (pnt1.x + pnt2.x) / 2
+  y = (pnt1.y + pnt2.y) / 2
+  z = (pnt1.z + pnt2.z) / 2
+  return Point(x, y, z)
   
-##########################################
+#####################################################################
 # construct a face with right-handed rule
 # input is 4 points, output is a face build up with first three points
 # rPnt is a point inside the init hull, so the volume with any face would be negative
-##########################################
+#####################################################################
 def faceFactory(faceP1, faceP2, faceP3, innerPnt):
   face = Point(faceP1, faceP2, faceP3)
   if not checkVisibility(face, innerPnt):
