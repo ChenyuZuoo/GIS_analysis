@@ -7,6 +7,8 @@
 
 # add findEdge(edgeList):
 # add getMiddlePnt(pnt1, pnt2):
+# add getInnerPnt(face, pnt):
+
 
 import arcpy
 import numpy as np
@@ -229,7 +231,12 @@ def getMiddlePnt(pnt1, pnt2):
   y = (pnt1.y + pnt2.y) / 2
   z = (pnt1.z + pnt2.z) / 2
   return Point(x, y, z)
-  
+
+# this func used for find the inner point of the initial tetrahedron
+def getInnerPnt(face, pnt):
+  return getMiddlePnt(getMiddlePnt(getMiddlePnt(face.p1, face.p2), face.p3))
+
+
 #####################################################################
 # construct a face with right-handed rule
 # input is 4 points, output is a face build up with first three points
