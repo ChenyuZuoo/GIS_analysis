@@ -71,7 +71,7 @@ f2 = Face(p1, p2, p6)
 f3 = Face(p2, p3, p6)
 f4 = Face(p1, p3, p6)
 
-def compareEdge(edge1, edge2):
+def isSameEdge(edge1, edge2):
   if (edge1.p1.x == edge2.p1.x and edge1.p1.y == edge2.p1.y and edge1.p1.z == edge2.p1.z \
     and edge1.p2.x == edge2.p2.x and edge1.p2.y == edge2.p2.y and edge1.p2.z == edge2.p2.z) \
   or (edge1.p1.x == edge2.p2.x and edge1.p1.y == edge2.p2.y and edge1.p1.z == edge2.p2.z \
