@@ -5,6 +5,7 @@
 
 #https://github.com/diwi/QuickHull-3D/blob/master/src/MAIN_quickhull/DwConvexHull3D.java
 
+# add Edge
 # add findEdge(edgeList):
 # add getMiddlePnt(pnt1, pnt2):
 # add getInnerPnt(face, pnt):
@@ -51,7 +52,12 @@ class Face(object):
       self.b = -self.b
       self.c = -self.c
       self.d = -self.d
-    self.flag = False;
+    # edges in this face
+    self.e1 = Edge(p1, p2)
+    self.e2 = Edge(p2, p3)
+    self.e3 = Edge(p3, p1)
+
+    self.flag = False
 
 
     
@@ -234,37 +240,58 @@ def getMiddlePnt(pnt1, pnt2):
 
 # this func used for find the inner point of the initial tetrahedron
 def getInnerPnt(face, pnt):
-  return getMiddlePnt(getMiddlePnt(getMiddlePnt(face.p1, face.p2), face.p3))
-
+  p = getMiddlePnt(getMiddlePnt(getMiddlePnt(face.p1, face.p2), face.p3), pnt)
+  p.flag = True
+  return p
 
 #####################################################################
+
+
 # construct a face with right-handed rule
 # input is 4 points, output is a face build up with first three points
 # rPnt is a point inside the init hull, so the volume with any face would be negative
-#####################################################################
 def faceFactory(faceP1, faceP2, faceP3, innerPnt):
-  face = Point(faceP1, faceP2, faceP3)
+  face = Face(faceP1, faceP2, faceP3)
   if not checkVisibility(face, innerPnt):
     return face
   else:
-    return Point(faceP1, faceP3, faceP2)
+    return Face(faceP1, faceP3, faceP2)
 
+# detecting whether two edges are the same
+def isSameEdge(edge1, edge2):
+  if (edge1.p1.x == edge2.p1.x and edge1.p1.y == edge2.p1.y and edge1.p1.z == edge2.p1.z \
+    and edge1.p2.x == edge2.p2.x and edge1.p2.y == edge2.p2.y and edge1.p2.z == edge2.p2.z) \
+  or (edge1.p1.x == edge2.p2.x and edge1.p1.y == edge2.p2.y and edge1.p1.z == edge2.p2.z \
+    and edge1.p2.x == edge2.p1.x and edge1.p2.y == edge2.p1.y and edge1.p2.z == edge2.p1.z):
+    return True
+    
 ### if there's more than one light face, a outer ring is needed to be find
 ### then using the points on this ring to constract new faces
-def findEdge(edgeList):
+def getOutRing(edgeList):
     temp = []
     index = []
+
     for i in range(len(edgeList)):
       for j in range(i+1, len(edgeList)):
-        if edgeList[i].__dict__ == edgeList[j].__dict__:
+        if compareEdge(edgeList[i], edgeList[j]):
           index.append(i)
+          index.append(j)
     
+    print index
     for i in range(len(edgeList)):
       if i not in index:
         temp.append(edgeList[i])
 
     return temp
 
+# get all the edges of a face set
+def getEdgeSet(faceSet):
+  temp = []
+  for face in faceSet:
+    temp.append(face.e1)
+    temp.append(face.e2)
+    temp.append(face.e3)
+  return temp
 
 ### Check if the point can see the faces 
 def checkVisibility(face, p):
@@ -300,11 +327,20 @@ def pointsAssignment(faceSet, pointSet):
     for point in pointSet:
       for face in faceSet:
         if checkVisibility(face, point):
-          if face in mPoint2FaceMap:
-            mPoint2FaceMap[face].append(point.__dict__)
+          if face in tempPointMap:
+            tempPointMap[face].append(point)
           else:
-            mPoint2FaceMap[face] = [point.__dict__]
+            tempPointMap[face] = [point]
+          break
     return tempPointMap
+
+# get light faces of a point from all the active faces
+def getLightFaces(pnt, faceSet):
+  tempSet = []
+  for face in faceSet:
+    if checkVisibility(face, pnt):
+      tempSet.append(face)
+  return tempSet
 
 # ignore face without points
 def faceSetUpdate(faceSet, hullSet, faceMap):
@@ -348,7 +384,7 @@ def pointSetUpdate(mPointsSet):
       tempSet.append(point)
   return tempSet
 
-# get all the points belong to a face
+# get all the outside points belong to a face
 def getPoints(faceMap, face):
   points = faceMap[face]
   return points
@@ -359,7 +395,7 @@ def expandHull(faceSet, mPoint2FaceMap, pointObjSet):
     # 1. find the furthest point in the set of this face
     # 2. 检测出该点所有可见的面
     # 3. 建立新的face  调用Point()构建新的面
-    # 4. deactive旧的face
+    # 4. deactive light face
     # 5. 更新mFaceSet
 
 
