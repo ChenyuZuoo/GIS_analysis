@@ -264,7 +264,7 @@ def isSameEdge(edge1, edge2):
   or (edge1.p1.x == edge2.p2.x and edge1.p1.y == edge2.p2.y and edge1.p1.z == edge2.p2.z \
     and edge1.p2.x == edge2.p1.x and edge1.p2.y == edge2.p1.y and edge1.p2.z == edge2.p1.z):
     return True
-    
+
 ### if there's more than one light face, a outer ring is needed to be find
 ### then using the points on this ring to constract new faces
 def getOutRing(edgeList):
@@ -371,7 +371,7 @@ def isInnerPoint(point, mFaceSet):
     return f
   else:
     for face in mFaceSet:
-      if (checkVisibility(face, point) == -1):
+      if checkVisibility(face, point):
         f = False
         return f
   return f
@@ -380,7 +380,7 @@ def isInnerPoint(point, mFaceSet):
 def pointSetUpdate(mPointsSet): 
   tempSet = []
   for point in mPointsSet:
-    if not isInnerPoint:
+    if not isInnerPoint(point, faceSet):
       tempSet.append(point)
   return tempSet
 
@@ -390,14 +390,25 @@ def getPoints(faceMap, face):
   return points
 
 # detect the furest point of evert active faces, and build some new faces
-def expandHull(faceSet, mPoint2FaceMap, pointObjSet):
+def expandHull(faceSet, faceMap, pointSet, innerPnt):
   for face in faceSet:
     # 1. find the furthest point in the set of this face
-    # 2. 检测出该点所有可见的面
-    # 3. 建立新的face  调用Point()构建新的面
-    # 4. deactive light face
-    # 5. 更新mFaceSet
+    pointOfFace = getPoints(faceMap, face)
+    furpnt = furthestPnt2Face(pointOfFace, face)
+    # 2. get all the (light faces) visible faces for this point
+    lightFaces = getLightFaces(furpnt, faceSet)
+    # 3. construct new faces with furest point and light faces
+    edgeset = getEdgeSet(lightFaces)
+    outring = getOutRing(edgeset)
+    # newFaces = []
+    for edge in outring:
+      newFace = faceFactory(edge.p1, edge.p2, furpnt, innerPnt)
+      faceSet.append(newFace)
+    # 4. deactive light face (delete light faces from faceSet)
+    for lightface in lightFaces:
+      faceSet.remove(lightface)
 
+  return faceSet
 
 ###############################################
 ###############Initialization##################
@@ -415,22 +426,28 @@ def init(inFC):
   pn2 = extPntsSet[j]
   m = furthestPnt2Line (extPntsSet,i,j) # find the most distant point to the line segment
   pn3 = extPntsSet[m]
-  face0 = Face(pn1, pn2, pn3) # build up a basic triangle for the initial hull
-  pn4 = furthestPnt2Face(extPntsSet,face0) # find the most distant point to the triangle 
-  face1 = Face(pn1, pn2, pn4) # build up the other three faces of the initial hull 
-  face2 = Face(pn1, pn3, pn4)
-  face3 = Face(pn2, pn3, pn4)
-  
-  # 1. 读数据
-  # 2. 建立初始四面体
-  # 3. 分配所有点到临近面
-  # 4. 把每个面放入mFaceSet作为激活状态的标记
+  face0 = faceFactory(pn1, pn2, pn3) # build up a basic triangle for the initial hull
+  pn4 = furthestPnt2Face(extPntsSet,face0) # find the most distant point to the triangle
+  ###############################################
+  # need to be tested
+  face0 = faceFactory(pn1, pn2, pn3, pn4)
+  ###############################################
+  p = getMiddlePnt(pn1, pn2)
+  innerPnt = getInnerPnt(face0, pn4)
+  face1 = faceFactory(pn1, pn2, pn4, innerPnt) # build up the other three faces of the initial hull 
+  face2 = faceFactory(pn1, pn3, pn4, innerPnt)
+  face3 = faceFactory(pn2, pn3, pn4, innerPnt)
 
-###############################################
-##################Iteration####################
-###############################################
-while (mFaceSet):
-  expandHull()
+  # 3) build initial data
+  faceSet = []
+  faceSet.append(face0)
+  faceSet.append(face1)
+  faceSet.append(face2)
+  faceSet.append(face3)
+  
+  pointMap = pointsAssignment(faceSet, pntsSet)
+
+  return pntSet, faceSet, pointMap
 
 
 ### active data set
@@ -439,4 +456,26 @@ mHullTriSet = [] # identified as final hull facet element
 mPointSet = readPoints(tempFC) # Points outside of temp hull
 # dic to restore all the assignment of points to face
 mPoint2FaceMap = {} # belonging status of active points and active faces
+
+###############################################
+##################Iteration####################
+###############################################
+# main function, using global varibles
+while (mFaceSet):
+  expandHull(mFaceSet, mPoint2FaceMap, mPointSet, innerPnt)
+  # point set update 
+  mPointSet = pointSetUpdate(mPointSet, mFaceSet)
+  # faceMap update 
+  mPoint2FaceMap = pointsAssignment(mFaceSet, mPointSet)
+  # face set update
+  mFaceSet = faceSetUpdate(mFaceSet, hullSet, mPoint2FaceMap)
+
+  
+
+
+
+
+
+
+
 

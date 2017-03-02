@@ -221,6 +221,7 @@ def getEdgeSet(faceSet):
     temp.append(face.e3)
   return temp
 
+# def buildFaces
 
 
 p = getMiddlePnt(p1, p2)
@@ -242,7 +243,14 @@ edgeset = getEdgeSet(lightface)
 # print edgeset
 outring = getOutRing(edgeset)
 # print outring
-
+print 'mFaceSet'
+print mFaceSet
+print 'lightface'
+print lightface
+for face in lightface:
+  mFaceSet.remove(face)
+print '**************'
+print mFaceSet
 
 
 
