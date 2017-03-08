@@ -134,7 +134,6 @@ def isNonCoplaner(p, face):
     flag = False
   return (flag)
 
-### find extreme points in the direction
 def extremePoints(pointSet):
     # data = []
     mmPoints = []
@@ -168,8 +167,10 @@ def extremePoints(pointSet):
 
     mmPoints = [pointSet[index_xmin], pointSet[index_xmax], pointSet[index_ymin], pointSet[index_ymax], pointSet[
         index_zmin], pointSet[index_zmax]]
-    return mmPoints
-  
+    mmUniquePoints = list(set(mmPoints))
+    return mmUniquePoints
+    # return mmPoints
+
 def furthestPnt2Pnt(pntSet):
   ### Build up a basic triangle of the tetrahedron
   ### Fisrt, find two most distant points to build up a line of the triangle
@@ -401,6 +402,7 @@ def getPoints(faceMap, face):
 
 # detect the furest point of evert active faces, and build some new faces
 def expandHull(faceSet, faceMap, pointSet, innerPnt):
+  tempFaceSet = faceSet
   for face in faceSet:
     if faceMap.has_key(face):
       # 1. find the furthest point in the set of this face
@@ -416,14 +418,14 @@ def expandHull(faceSet, faceMap, pointSet, innerPnt):
       # newFaces = []
       for edge in outring:
         newFace = faceFactory(edge.p1, edge.p2, furpnt, innerPnt)
-        faceSet.append(newFace)
+        tempFaceSet.append(newFace)
 
       # 4. deactive light face (delete light faces from faceSet)
       # for lightface in lightFaces:
       #   faceSet.remove(lightface)
-      faceSet = lightFacesRem(faceSet)
+  tempFaceSet = lightFacesRem(faceSet)
 
-  return faceSet
+  return tempFaceSet
 
 
 
@@ -437,7 +439,7 @@ mPoint2FaceMap = {} # belonging status of active points and active faces
 extPntsSet = extremePoints(mPointSet)
 pnt1 = furthestPnt2Pnt(extPntsSet)[0]
 pnt2 = furthestPnt2Pnt(extPntsSet)[1]
-pnt3 = furthestPnt2Line (extPntsSet,pnt1,pnt2)
+pnt3 = furthestPnt2Line(extPntsSet,pnt1,pnt2)
 face1 = Face(pnt1, pnt2, pnt3) # build up a basic triangle for the initial hull
 pnt4 = furthestPnt2Face(extPntsSet,face1)
 InnerPnt = getInnerPnt(face1, pnt4)
@@ -448,7 +450,8 @@ face3 = faceFactory(pnt1, pnt3, pnt4, InnerPnt)
 face4 = faceFactory(pnt2, pnt3, pnt4, InnerPnt)
 
 mFaceSet = [face1, face2, face3, face4]
-mPointSet = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15] 
+# mPointSet = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15]
+mPointSet = pointSetUpdate(mPointSet, mFaceSet)
 mPoint2FaceMap = pointsAssignment(mFaceSet, mPointSet)
 
 # keys = mPoint2FaceMap.keys()
@@ -465,7 +468,7 @@ mPoint2FaceMap = pointsAssignment(mFaceSet, mPointSet)
 ###############################################
 # main function, using global varibles
 while (mPoint2FaceMap):
-  expandHull(mFaceSet, mPoint2FaceMap, mPointSet, InnerPnt)
+  mFaceSet = expandHull(mFaceSet, mPoint2FaceMap, mPointSet, InnerPnt)
   # point set update 
   mPointSet = pointSetUpdate(mPointSet, mFaceSet)
   # faceMap update 
@@ -473,4 +476,4 @@ while (mPoint2FaceMap):
   # face set update
   # mFaceSet = faceSetUpdate(mFaceSet, hullSet, mPoint2FaceMap)
 
-
+print mFaceSet

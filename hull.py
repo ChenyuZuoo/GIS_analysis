@@ -402,24 +402,30 @@ def getPoints(faceMap, face):
 
 # detect the furest point of evert active faces, and build some new faces
 def expandHull(faceSet, faceMap, pointSet, innerPnt):
+  tempFaceSet = faceSet
   for face in faceSet:
-    # 1. find the furthest point in the set of this face
-    pointOfFace = getPoints(faceMap, face)
-    furpnt = furthestPnt2Face(pointOfFace, face)
-    # 2. get all the (light faces) visible faces for this point
-    lightFaces = getLightFaces(furpnt, faceSet)
-    # 3. construct new faces with furest point and light faces
-    edgeset = getEdgeSet(lightFaces)
-    outring = getOutRing(edgeset)
-    # newFaces = []
-    for edge in outring:
-      newFace = faceFactory(edge.p1, edge.p2, furpnt, innerPnt)
-      faceSet.append(newFace)
-    # 4. deactive light face (delete light faces from faceSet)
-    for lightface in lightFaces:
-      faceSet.remove(lightface)
+    if faceMap.has_key(face):
+      # 1. find the furthest point in the set of this face
+      pointOfFace = getPoints(faceMap, face)
+      furpnt = furthestPnt2Face(pointOfFace, face)
 
-  return faceSet
+      # 2. get all the (light faces) visible faces for this point
+      lightFaces = getLightFaces(furpnt, faceSet)
+
+      # 3. construct new faces with furest point and light faces
+      edgeset = getEdgeSet(lightFaces)
+      outring = getOutRing(edgeset)
+      # newFaces = []
+      for edge in outring:
+        newFace = faceFactory(edge.p1, edge.p2, furpnt, innerPnt)
+        tempFaceSet.append(newFace)
+
+      # 4. deactive light face (delete light faces from faceSet)
+      # for lightface in lightFaces:
+      #   faceSet.remove(lightface)
+  tempFaceSet = lightFacesRem(faceSet)
+
+  return tempFaceSet
 
 
 
