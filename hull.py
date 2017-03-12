@@ -1,25 +1,23 @@
 # -*- coding: utf-8 -*- 
-################################################
-### GIS Application Project : 3D Convex Hull ###
-################################################
-#http://blog.sina.com.cn/s/blog_732dd9320100sizm.html
+####################################################################
+##################### GIS Application Project ######################
+########################## 3D Convex Hull ##########################
+################## Author: Junyan LI, Chenyu ZUO  ##################
+######################### Python: 2.7.10 ###########################
+#### This code is aim to produce 3D convex Hull from point sets ####
+###########################   12/03/2017  ##########################
+####################################################################
 
-#https://docs.google.com/document/d/17Pv1gwL_4Wm62T8yKGx2LEy-a_41iskQqMHeb8cXFTg/edit
-
-#https://github.com/diwi/QuickHull-3D/blob/master/src/MAIN_quickhull/DwConvexHull3D.java
-#http://blog.csdn.net/tmljs1988/article/details/7268944
-
-
-#### How to store 3d : http://desktop.arcgis.com/en/arcmap/latest/extensions/3d-analyst/editing-polygons-in-3d.htm
-
+# Imports
+from __future__ import division
 import arcpy
 import numpy as np
 import math
-from __future__ import division
+
 
 EPS = 1e-8
 
-Points = [[0,0,0],[3,1,0],[0,3,0],[2,0,0],[0,4,6],[-2,0,7],[0,6,9],[1,-5,3]]
+# Points = [[0,0,0],[3,1,0],[0,3,0],[2,0,0],[0,4,6],[-2,0,7],[0,6,9],[1,-5,3]]
 
 #############################################################
 #################### Define Class ###########################
@@ -78,7 +76,7 @@ def readPoints(inFC):
     del cur
     return mPointsSet
 
-### get normal vector 已知三点坐标，求法向量
+### get normal vector
 
 # def getNormal(p1,p2,p3):
 #   a = ( (p2.y-p1.y)*(p3.z-p1.z)-(p2.z-p1.z)*(p3.y-p1.y) )
@@ -144,6 +142,7 @@ def isNonCoplaner(p, face):
     flag = False
   return (flag)
 
+
 ### find extreme points in the direction
 def extremePoints(pointSet):
     # data = []
@@ -154,6 +153,8 @@ def extremePoints(pointSet):
     min_x = 999999999
     min_y = 999999999
     min_z = 999999999
+    index_zmin = -1
+    index_zmax = -1
 
     for i in range(0, len(pointSet)):
         # print pointSet[i].x
@@ -176,9 +177,11 @@ def extremePoints(pointSet):
             max_z = pointSet[i].z
             index_zmax = i
 
-    mmPoints = [pointSet[index_xmin], pointSet[index_xmax], pointSet[index_ymin], pointSet[index_ymax], pointSet[
-        index_zmin], pointSet[index_zmax]]
-    return mmPoints
+    mmPoints = [pointSet[index_xmin], pointSet[index_xmax], pointSet[index_ymin], pointSet[index_ymax], pointSet[index_zmin], pointSet[index_zmax]]
+    mmUniquePoints = list(set(mmPoints))
+    print index_xmin, index_xmax, index_ymin, index_ymax, index_zmin, index_zmax
+    return mmUniquePoints
+  
   
 def furthestPnt2Pnt(pntSet):
   ### Build up a basic triangle of the tetrahedron
@@ -200,9 +203,9 @@ def furthestPnt2Pnt(pntSet):
   else:
     index1 = 0
     index2 = 1
-#   print ("Index1 and index2")
-#   print (index1, index2)
-  return pntSet[index1], pntSet[index2]
+  print ("Index1 and index2")
+  print index1, index2
+  return pntSet[index1],pntSet[index2]
 
 ### Find a distant point to the line
 # inFC : mmPoints
@@ -214,8 +217,8 @@ def furthestPnt2Line (pntSet,p1,p2):
       if (p2LDist>maxP2LDist):
         maxP2LDist = p2LDist
         index3 = k
-#   print ("index3")
-#   print (index3)
+  print ("index3")
+  print index3
   return pntSet[index3]
 
 ### Find the most distant point from a face
@@ -226,13 +229,13 @@ def furthestPnt2Face(pntSet,face):
     if dist0 > dist:
       dist = dist0
       index4 = j
-    #if (dist == 0) :
-      #print("All the points from the point clouds are Coplaner.")
-      #break  
-#   print ("index4")
-#   print (index4)
+  if (dist == 0) :
+    print("All the points from the point clouds are Coplaner.")
+    
+  print ("index4")
+  print index4
   return pntSet[index4]    
-      
+
 
   
 def getMiddlePnt(pnt1, pnt2):
@@ -240,6 +243,8 @@ def getMiddlePnt(pnt1, pnt2):
   y = (pnt1.y + pnt2.y) / 2
   z = (pnt1.z + pnt2.z) / 2
   return Point(x, y, z)
+
+
 
 # this func used for find the inner point of the initial tetrahedron
 def getInnerPnt(face, pnt):
@@ -253,11 +258,13 @@ def getInnerPnt(face, pnt):
 #####################################################################
 
 # construct a face with right-handed rule
+
+
 # input is 4 points, output is a face build up with first three points
 # rPnt is a point inside the init hull, so the volume with any face would be negative
 def faceFactory(faceP1, faceP2, faceP3, innerPnt):
   face = Face(faceP1, faceP2, faceP3)
-  if not checkVisibility(face, innerPnt):
+  if not (checkVisibility(face, innerPnt) == 1):
     return face
   else:
     return Face(faceP1, faceP3, faceP2)
@@ -282,7 +289,7 @@ def getOutRing(edgeList):
           index.append(i)
           index.append(j)
     
-    print index
+#     print index
     for i in range(len(edgeList)):
       if i not in index:
         temp.append(edgeList[i])
@@ -325,17 +332,21 @@ def checkVisibility(face, p):
   # else:
   #   return 0  ### coplannar with hull
   
-  if vis > 0:
-    return True
-  else:
-    return False
+  if vis > EPS:
+    return -1
+  if vis < -EPS:
+    return 1
+  return 0
+
+
+
 
 ### Assign each point to a face
 def pointsAssignment(faceSet, pointSet):
     tempPointMap = {}
     for point in pointSet:
         for face in faceSet:
-            if checkVisibility(face, point):
+            if (checkVisibility(face, point) == 1):
                 if face in tempPointMap:
                     # tempPointMap[face].append(point.__dict__)
                     tempPointMap[face].append(point)
@@ -349,31 +360,39 @@ def pointsAssignment(faceSet, pointSet):
 def getLightFaces(pnt, faceSet):
   tempSet = []
   for face in faceSet:
-    if checkVisibility(face, pnt):
+    if (checkVisibility(face, pnt) == 1):
+      face.flag = True
       tempSet.append(face)
   return tempSet
 
 # ignore face without points
-def faceSetUpdate(faceSet, hullSet, faceMap):
+# def faceSetUpdate(faceSet, hullSet, faceMap):
+#     tempFaceSet = []
+#     for face in faceSet:
+#       if isFinalFace(face,faceMap):
+#         hullSet.append(face)
+#       else:
+#         tempFaceSet.append(face)
+#     return tempFaceSet
+
+def lightFacesRem(faceSet):
     tempFaceSet = []
     for face in faceSet:
-      if isFinalFace(face,faceMap):
-        hullSet.append(face)
-      else:
+      if not face.flag:
         tempFaceSet.append(face)
     return tempFaceSet
 
 # check if a face is final hull
-def isFinalFace(face, mPoint2FaceMap):
-  f = False
-  if face.flag:
-    f = True
-    return f
-  else:
-    if not mPoint2FaceMap.has_key(face):
-      f = True
-      return f
-  return f
+# def isFinalFace(face, mPoint2FaceMap):
+#   f = False
+#   if face.flag:
+#     f = True
+#     return f
+#   else:
+#     if not mPoint2FaceMap.has_key(face):
+#       f = True
+#       return f
+#   return f
 
 # check if a point is inside convex hull
 def isInnerPoint(point, mFaceSet):
@@ -382,15 +401,15 @@ def isInnerPoint(point, mFaceSet):
     return f
   else:
     for face in mFaceSet:
-      if checkVisibility(face, point):
+      if (checkVisibility(face, point) == 1):
         f = False
         return f
   return f
 
 # update active point list
-def pointSetUpdate(mPointsSet): 
+def pointSetUpdate(pointSet, faceSet): 
   tempSet = []
-  for point in mPointsSet:
+  for point in pointSet:
     if not isInnerPoint(point, faceSet):
       tempSet.append(point)
   return tempSet
@@ -421,12 +440,11 @@ def expandHull(faceSet, faceMap, pointSet, innerPnt):
         tempFaceSet.append(newFace)
 
       # 4. deactive light face (delete light faces from faceSet)
-      # for lightface in lightFaces:
-      #   faceSet.remove(lightface)
-  tempFaceSet = lightFacesRem(faceSet)
+      for lightface in lightFaces:
+        faceSet.remove(lightface)
+  # tempFaceSet = lightFacesRem(faceSet)
 
   return tempFaceSet
-
 
 
 #####################################################
@@ -438,18 +456,22 @@ def expandHull(faceSet, faceMap, pointSet, innerPnt):
 def outputFinalPolygon(mFaceSet, OutFC):
   
   # Read mFaceSet data into coordList 
-  coordList = []
+  # coordList = [[]]
+  # coordList = [[[] for i in range(mFaceSet)] for i in range(mFaceSet)]
+  coordList = [([0] * 3) for i in range(len(mFaceSet))]
   
-  for i in range(0, len(mFaceSet)):
-    coordList[i][0][0] = face[i].p1.x
-    coordList[i][0][1] = face[i].p1.y
-    coordList[i][0][2] = face[i].p1.z
-    coordList[i][1][0] = face[i].p2.x
-    coordList[i][1][1] = face[i].p2.y
-    coordList[i][1][2] = face[i].p2.z
-    coordList[i][2][0] = face[i].p3.x
-    coordList[i][2][1] = face[i].p3.y
-    coordList[i][2][2] = face[i].p3.z
+  for i in range(len(mFaceSet)):
+    coordList[i][0] = [mFaceSet[i].p1.x, mFaceSet[i].p1.y, mFaceSet[i].p1.z]
+    coordList[i][1] = [mFaceSet[i].p2.x, mFaceSet[i].p2.y, mFaceSet[i].p2.z]
+    coordList[i][2] = [mFaceSet[i].p3.x, mFaceSet[i].p3.y, mFaceSet[i].p3.z]
+    # coordList[i][0][1] = mFaceSet[i].p1.y
+    # coordList[i][0][2] = mFaceSet[i].p1.z
+    # coordList[i][1][0] = mFaceSet[i].p2.x
+    # coordList[i][1][1] = mFaceSet[i].p2.y
+    # coordList[i][1][2] = mFaceSet[i].p2.z
+    # coordList[i][2][0] = mFaceSet[i].p3.x
+    # coordList[i][2][1] = mFaceSet[i].p3.y
+    # coordList[i][2][2] = mFaceSet[i].p3.z
 
   # Create empty Point and Array objects
   point = arcpy.Point()
@@ -522,9 +544,14 @@ def init(inFC):
   # find two most distant points among extreme points to build up a line segment 
   pnt1 = furthestPnt2Pnt(extPntsSet)[0]
   pnt2 = furthestPnt2Pnt(extPntsSet)[1]
-  pnt3 = furthestPnt2Line (extPntsSet,pnt1,pnt2)
+
+  if (len(extPntsSet) != 2) :
+    pnt3 = furthestPnt2Line (extPntsSet,pnt1,pnt2)
+  else: 
+    pnt3 = furthestPnt2Line (PntsSet,pnt1,pnt2)
+
   face1 = Face(pnt1, pnt2, pnt3) # build up a basic triangle for the initial hull
-  pnt4 = furthestPnt2Face(extPntsSet,face1) # find the most distant point to the triangle
+  pnt4 = furthestPnt2Face(pntsSet,face1) # find the most distant point to the triangle
   
   # create innerpoint of the initial tetrahedron
   InnerPnt = getInnerPnt(face1, pnt4)
@@ -543,7 +570,7 @@ def init(inFC):
   
   pointMap = pointsAssignment(faceSet, pntsSet)
 
-  return pntSet, faceSet, pointMap, InnerPnt
+  return pntsSet, faceSet, pointMap, InnerPnt
 
 
 ### active data set
@@ -560,14 +587,16 @@ mPoint2FaceMap = {} # belonging status of active points and active faces
 arcpy.env.overwriteOutput = True  
 
 
-# OutFC = "E:/LJY/16WS/GISApplication/Project/OSMBuildingCentroidsDresden/test6.shp"
+# # OutFC = "E:/LJY/16WS/GISApplication/Project/OSMBuildingCentroidsDresden/test6.shp"
 # worksp = "E:/LJY/16WS/GISApplication/Project/OSMBuildingCentroidsDresden/" 
-# outFCName = "test7"
+# inFCName = "Export_Output_2.shp"
+# outFCName = "test11"
+
 
 # Input
-worksp = arcpy.getParameterAsText(0)
-inFCName = arcpy.getParameterAsText(1)
-outFCName = arcpy.getParameterAsText(2)
+worksp = arcpy.GetParameterAsText(0)
+inFCName = arcpy.GetParameterAsText(1)
+outFCName = arcpy.GetParameterAsText(2)
 
 # Add shape extensions if necessary
 inFCExtension = controlExtension(inFCName,".shp")
@@ -582,25 +611,34 @@ spatialRef = arcpy.Describe(inFC).spatialReference
 
 # Create an empty polygon shapefile to store the output data
 createEmptyPolygonShape(worksp, outFCName, spatialRef)
-
+arcpy.AddMessage("--- Create the result shapefile")  
 
 ###############################################
 ################### init ######################
 ###############################################
 mPointSet, mFaceSet, mPoint2FaceMap, innerPnt = init(inFC)
 
+arcpy.AddMessage("--- ini Finished")
+
 ###############################################
 ##################Iteration####################
 ###############################################
 # main function, using global varibles
+arcpy.AddMessage("--- Iteration Started")  
+
+counter = 0
 while (mPoint2FaceMap):
-  expandHull(mFaceSet, mPoint2FaceMap, mPointSet, innerPnt)
+  mFaceSet = expandHull(mFaceSet, mPoint2FaceMap, mPointSet, innerPnt)
+  arcpy.AddMessage("--- Update Hull")  
   # point set update 
   mPointSet = pointSetUpdate(mPointSet, mFaceSet)
+  arcpy.AddMessage("--- Update Point")  
   # faceMap update 
   mPoint2FaceMap = pointsAssignment(mFaceSet, mPointSet)
+  arcpy.AddMessage("--- Update face")  
   # face set update
-  mFaceSet = faceSetUpdate(mFaceSet, hullSet, mPoint2FaceMap)
+  # mFaceSet = faceSetUpdate(mFaceSet, hullSet, mPoint2FaceMap)
+  counter += 1
 
 arcpy.AddMessage("--- Iteration Finished")  
   

@@ -349,7 +349,7 @@ def getLightFaces(pnt, faceSet):
 # def faceSetUpdate(faceSet, hullSet, faceMap):
 #     tempFaceSet = []
 #     for face in faceSet:
-#       if isFinalFace(face,faceMap):
+#       if isFinalFace(face,faceMap): 
 #         hullSet.append(face)
 #       else:
 #         tempFaceSet.append(face)
@@ -423,6 +423,7 @@ def expandHull(faceSet, faceMap, pointSet, innerPnt):
       # 4. deactive light face (delete light faces from faceSet)
       # for lightface in lightFaces:
       #   faceSet.remove(lightface)
+      break
   tempFaceSet = lightFacesRem(faceSet)
 
   return tempFaceSet
@@ -432,7 +433,7 @@ def expandHull(faceSet, faceMap, pointSet, innerPnt):
 ### active data set
 mFaceSet = [] # temp hull
 # mHullTriSet = [] # identified as final hull facet element 
-mPointSet = [p0, p1, p2, p3, p4, p5, p6, p7]#, p8, p9, p10, p11, p12, p13, p14, p15] # readPoints(tempFC) # Points outside of temp hull
+mPointSet = [p0, p6, p1, p2, p3, p4, p5, p7]#, p8, p9, p10, p11, p12, p13, p14, p15] # readPoints(tempFC) # Points outside of temp hull
 # dic to restore all the assignment of points to face
 mPoint2FaceMap = {} # belonging status of active points and active faces
 
@@ -467,6 +468,7 @@ mPoint2FaceMap = pointsAssignment(mFaceSet, mPointSet)
 ##################Iteration####################
 ###############################################
 # main function, using global varibles
+counter = 0
 while (mPoint2FaceMap):
   mFaceSet = expandHull(mFaceSet, mPoint2FaceMap, mPointSet, InnerPnt)
   # point set update 
@@ -475,5 +477,7 @@ while (mPoint2FaceMap):
   mPoint2FaceMap = pointsAssignment(mFaceSet, mPointSet)
   # face set update
   # mFaceSet = faceSetUpdate(mFaceSet, hullSet, mPoint2FaceMap)
+  counter += 1
 
 print mFaceSet
+print counter
